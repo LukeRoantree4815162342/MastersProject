@@ -8,7 +8,7 @@ To do this;
 
 > I solve (find eigenstates of) the Time-Independent Schrodinger Equation for a given potential distribution (so far using a soft-core potential to numerically simulate a Coulomb potential while avoiding the problem at the centre)
 
-> I pick a state, and temporally propagate it to see how it evolves in time under a time-dependent potential. To simulate a `laser pulse', I add a time-dependent gaussian packet term to the initial soft-core potential.
+> I pick a state, and propagate it through time (as described by the TDSE) to see how it evolves under a chosen time-dependent potential. I model the Coulomb interaction with a soft-core potential.
 
 ---
 

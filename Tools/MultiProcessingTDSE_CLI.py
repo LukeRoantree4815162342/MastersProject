@@ -18,6 +18,7 @@ parser = ArgumentParser(description="Tool for solving radially-symmetric TDSE un
 parser.add_argument('num_x_pts', type=int, help='(int) number of points to use in radial direction.\n(fixed end points of -10,10)')
 parser.add_argument('dt', type=float, help='(float) time-step size for time propagation')
 parser.add_argument('num_time_steps', type=int, help='(float) number of time steps to propagate through')
+parser.add_argument('--potential_field','-f',type=str, help='(str) which potential field to use.\nChoices:\npotential_softcore\npotential_linear_with_time\npotential_DC\npotential_with_gaussian_pulse\npotential_with_3_gaussian_pulses',default='potential_softcore')
 parser.add_argument('--num_jobs', '-j', type=int, help='(int) number of jobs to split propagation over', default=3)
 parser.add_argument('--num_workers', '-w', type=int, help='(int) number of workers to perform the jobs\n(recommend <= num_jobs)', default=3)
 parser.add_argument('--show_improvement', '-i', action='store_true', help='(flag) run non-parallel also and show improvement')
@@ -42,24 +43,49 @@ def potential_softcore(xk, t):
     denominator = (np.abs(xk)**n + b**n)**(1/n)
     return numerator/denominator
 
+
 @np.vectorize
 def potential_linear_with_time(xk, t):
-    alpha = 5
+    alpha = 1000
     numerator = -v
     denominator = (np.abs(xk)**n + b**n)**(1/n)
     return numerator/denominator + alpha*t*xk
 
 @np.vectorize
-def potential_oscillating_with_time(xk,t):
-    omega = 20
+def potential_DC(xk, t):
+    alpha = 1e-6
     numerator = -v
     denominator = (np.abs(xk)**n + b**n)**(1/n)
-    return numerator/denominator + (0 if t<0.01 else 20*np.sin(t*omega)*xk*np.exp(-0.5*((t)/0.4)**2))
+    return numerator/denominator + alpha*xk
 
+@np.vectorize
+def potential_oscillating_with_time(xk,t):
+    omega = 1
+    numerator = -v
+    denominator = (np.abs(xk)**n + b**n)**(1/n)
+    return numerator/denominator + np.sin(t*omega)*xk*np.exp(2 - t**2)
+
+@np.vectorize
+def potential_with_gaussian_pulse(xk,t):
+    weight = 1000
+    numerator = -v
+    denominator = (np.abs(xk)**n + b**n)**(1/n)
+    pulse = (2/np.sqrt(2*np.pi))*np.exp(-2*(t-3)**2)*xk#*np.sin(25*t)
+    return numerator/denominator - weight*pulse
+
+@np.vectorize
+def potential_with_3_gaussian_pulses(xk,t):
+    weight = 1000
+    numerator = -v
+    denominator = (np.abs(xk)**n + b**n)**(1/n)
+    pulse1 = (4/np.sqrt(2*np.pi))*np.exp(-8*(t-1)**2)*xk
+    pulse2 = (4/np.sqrt(2*np.pi))*np.exp(-8*(t-3)**2)*xk
+    pulse3 = (4/np.sqrt(2*np.pi))*np.exp(-8*(t-5)**2)*xk
+    return numerator/denominator - weight*(pulse1 + pulse2 + pulse3)
 """
 Choose which potential function to use: 
 """
-potential = potential_linear_with_time
+potential = locals()[args.potential_field]
 
 def gen_diag_Hamiltonian(x_arr):
     
